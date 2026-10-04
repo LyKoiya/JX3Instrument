@@ -1,0 +1,48 @@
+{
+	"folders": [
+		{
+			"name": "JX3Instrument",
+			"path": "."
+		}
+	],
+	"settings": {
+		// 设置项目默认编码为 utf8
+		"files.encoding": "utf8",
+		// 开启自动编码猜测（作为备用，提高兼容性）
+		"files.autoGuessEncoding": true,
+		// 针对 Python 文件单独设置为 UTF-8
+		"[python]": {
+			"files.encoding": "utf8",
+			"files.autoGuessEncoding": false // 关闭自动猜测，固定为 UTF-8
+		},
+		// 普通lua脚本：强制utf8
+		"[lua]": {
+			"files.encoding": "utf8",
+			"files.autoGuessEncoding": false
+		},
+		// 匹配包含 zhtw 的语言文件，强制UTF-8，支持glob匹配模式
+		"encoding-guard.patternMap": {
+			"**/*.dat": "utf8",
+			"**/*.ini": "gbk",
+			"**/*.txt": "gbk",
+			"**/*.bat": "gbk",
+			"**/*.yml":"utf8",
+		},
+	},
+	"launch": {
+		"version": "0.2.0",
+		"configurations": [
+			{
+				"type": "lua",
+				"request": "launch",
+				"name": "Run LUA5.1.5",
+				"cwd": "${workspaceFolder:LHDBM}",
+				"luaexe": "${workspaceFolder:LHDBM}/!src-dist/bin/lua.exe",  // 直接指定可执行文件
+				"program": "${file}",  // 使用当前打开的文件
+				"arg": [],	
+				"console": "integratedTerminal",  // 或 "externalTerminal"	
+				"stopOnEntry": false,
+			}
+		]
+	},
+}
