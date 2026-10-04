@@ -38,8 +38,17 @@ function csv2instrument_PS {
     )
 
     # 创建Excel的COM对象
-    $excel = New-Object -ComObject Excel.Application
+    $excel = New-Object -ComObject Ket.Application
+
+    if (-not $excel) {
+        $excel = New-Object -ComObject Excel.Application
+        if (-not $excel) {
+            Write-Error "无法创建Excel COM对象，请确保已安装Excel。"
+            return
+        }
+    }
     $excel.Visible = $false
+    $excel.DisplayAlerts = $false
     $workbook = $excel.Workbooks.Open($filePath)
     $sheet = $workbook.Sheets.Item(1)
 

@@ -1,48 +1,79 @@
--- ÊÊÅäLUA°æ±¾
-local lua51 = _VERSION == "Lua 5.1"
-local lua54 = _VERSION == "Lua 5.4"
-if lua51 then
-    load = loadstring
-end
-if lua54 then
-    loadstring = load
-end
+-- å°†æ›²è°±è½¬csvæ–‡ä»¶
+function instrument2csv_LUA(OpenFileName, SaveFileName)
+    local file
+    file = assert(io.open(OpenFileName, "rb")) -- æ‰“å¼€æ–‡ä»¶ï¼Œå¹¶è¯»å–
+    if not file then
+        print("é”™è¯¯ï¼šæ— æ³•æ‰“å¼€æ–‡ä»¶", OpenFileName)
+        return
+    end
 
---½«ÇúÆ××ªcsvÎÄ¼ş
-function instrument2csv_LUA(OpenFileName,SaveFileName)
-	local file = assert(io.open(OpenFileName, "rb")) --´ò¿ªÎÄ¼ş£¬²¢¶ÁÈ¡
-	file:seek("set", 16)  -- Ìø¹ıÎÄ¼şÍ·CNDKĞ£ÑéÂë£¬16×Ö½Ú
-	local szTable = loadstring(file:read("*a"))()  -- ¶ÁÈ¡Ê£ÓàÄÚÈİ£¬²¢¼ÓÔØ
-	file:close() --¹Ø±ÕÎÄ¼ş
+    if file:read(4) ~= "CNDK" then -- æ£€æŸ¥æ–‡ä»¶ç±»å‹æ ‡è¯†
+        file:close()
+        print("é”™è¯¯ï¼šä¸æ˜¯æœ‰æ•ˆçš„JX3Instrumentæ–‡ä»¶")
+        return
+    end
+    file:seek("set", 16) -- è·³è¿‡æ–‡ä»¶å¤´CNDKæ ¡éªŒç ï¼Œ16å­—èŠ‚
+    local str = file:read("*a")
+    file:close() -- å…³é—­æ–‡ä»¶
+    local fn, err = loadstring(str) -- è¯»å–å‰©ä½™å†…å®¹ï¼Œå¹¶åŠ è½½
+    local tData = {}
+    if fn then
+        tData = fn() -- æ‰§è¡ŒåŠ è½½çš„å‡½æ•°ï¼Œè·å–æ›²è°±æ•°æ®è¡¨
+    else
+        print("é”™è¯¯ï¼šæ— æ³•åŠ è½½æ›²è°±æ•°æ®", err)
+        return
+    end
 
-    local retStr = "\xEF\xBB\xBF" .. 'label,time,szState1,szKey1,\"return {nVersion='.. szTable['nVersion'] .. ',' .. 'szFileName=\"\"' .. szTable['szFileName'] .. '\"\",\",SetSimMode 2 //szFileName:' .. szTable['szFileName'] .. '\n'  --±íÍ·
-    --±éÀúÔ­±í£¬ÅÅĞò
+    local aAllData = {}
+    table.insert(
+        aAllData,
+        'label,time,szState1,szKey1,\"return {nVersion='
+            .. tData.nVersion .. ','
+            .. 'szFileName=\"\"' .. tData.szFileName
+            .. '\"\",\",SetSimMode 2 //szFileName:' .. tData.szFileName
+            .. '\n'
+    ) -- è¡¨å¤´
+    -- éå†åŸè¡¨ï¼Œæ’åº
     local keys = {}
-    for k in pairs(szTable) do
+    for k in pairs(tData) do
         if type(k) == "number" then
             table.insert(keys, k)
         end
     end
-    table.sort(keys) -- ÅÅĞò
-	--±éÀúÇúÆ×£¬Ğ´ÈëÎÄ¼ş
+    table.sort(keys) -- æ’åº
+    -- éå†æ›²è°±ï¼Œå†™å…¥æ–‡ä»¶
     for label, id in ipairs(keys) do
-		retStr = retStr .. label .. ',' .. id .. ',' .. szTable[id]['szState1'] .. ',' .. szTable[id]['szKey1'] .. ',\"[' ..id .. ']={szState1=\"\"'..szTable[id]['szState1'] .. '\"\",szKey1=\"\"' .. szTable[id]['szKey1'] .. '\"\"},\"\n'
-	end
-	retStr = retStr .. ',,,,}'
-	file = io.open(SaveFileName, 'wb') --´ò¿ª±£´æÂ·¾¶
-	file:write(retStr) --Ğ´ÈëÊı¾İ
-    file:close() --¹Ø±ÕÎÄ¼ş
-
+        table.insert(aAllData, label .. ',')
+        table.insert(aAllData, id .. ',')
+        table.insert(aAllData, tData[id].szState1 .. ',')
+        table.insert(aAllData, tData[id].szKey1 .. ',')
+        table.insert(aAllData, tData[id].szKey1 .. ',')
+        table.insert(
+            aAllData,
+            '\"[' .. id
+                .. ']={szState1=\"\"' .. tData[id].szState1
+                .. '\"\",szKey1=\"\"' .. tData[id].szKey1
+                .. '\"\"},\"\n'
+        )
+    end
+    table.insert(aAllData, ',,,,}')
+    local retStr = table.concat(aAllData) -- åˆå¹¶ä¸ºå­—ç¬¦ä¸²
+    file = io.open(SaveFileName, 'wb') -- æ‰“å¼€ä¿å­˜è·¯å¾„
+    if file then
+        file:write('\239\187\191' .. retStr) -- å†™å…¥æ•°æ®
+        file:close() -- å…³é—­æ–‡ä»¶
+    end
+ 
 end
 
--- Èë¿Ú¼ì²éÆô¶¯²ÎÊı
+-- å…¥å£æ£€æŸ¥å¯åŠ¨å‚æ•°
 if #arg < 1 then
-    os.exit(1) -- Æô¶¯²ÎÊıÎª¿Õ£¬Ã»ÓĞÇúÆ×Â·¾¶£¬ÔòÍË³ö
-	elseif #arg == 1 then
-		arg[2] = arg[1] .. '.csv' -- Æô¶¯²ÎÊıÖ»ÓĞÒ»¸ö£¬Ìî³äµÚ¶ş²ÎÊı±£´æÂ·¾¶
+    os.exit(1) -- å¯åŠ¨å‚æ•°ä¸ºç©ºï¼Œæ²¡æœ‰æ›²è°±è·¯å¾„ï¼Œåˆ™é€€å‡º
+elseif #arg == 1 then
+    arg[2] = arg[1] .. '.csv' -- å¯åŠ¨å‚æ•°åªæœ‰ä¸€ä¸ªï¼Œå¡«å……ç¬¬äºŒå‚æ•°ä¿å­˜è·¯å¾„
 end
 
--- µ÷ÓÃÇúÆ××ª»»º¯Êı
+-- è°ƒç”¨æ›²è°±è½¬æ¢å‡½æ•°
 instrument2csv_LUA(arg[1], arg[2])
 
-os.exit(1) -- ½áÊøÍË³ö
+os.exit(1) -- ç»“æŸé€€å‡º

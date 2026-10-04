@@ -1,14 +1,6 @@
--- ÊÊÅäLUA°æ±¾
-local lua51 = _VERSION == "Lua 5.1"
-local lua54 = _VERSION == "Lua 5.4"
-if lua51 then
-    load = loadstring
-end
-if lua54 then
-    loadstring = load
-end
+-- é€‚é…LUAç‰ˆæœ¬
 
--- Òô·û±àºÅÓ³Éä¼üÅÌ²¼¾Ö
+-- éŸ³ç¬¦ç¼–å·æ˜ å°„é”®ç›˜å¸ƒå±€
 local mapKey = {
 	[0] = "",
 	[1] = "",
@@ -140,13 +132,13 @@ local mapKey = {
 	[127] = ""
 }
 
--- ·µ»ØÒô·ûÓ³Éä°´¼ü
+-- è¿”å›éŸ³ç¬¦æ˜ å°„æŒ‰é”®
 function getKey(szNote)
-    -- ·µ»ØÓ³Éäº¯Êı
-    return mapKey[szNote] or "?"  -- Î´Ó³ÉäµÄÒô·û·µ»Ø"?"
+    -- è¿”å›æ˜ å°„å‡½æ•°
+    return mapKey[szNote] or "?"  -- æœªæ˜ å°„çš„éŸ³ç¬¦è¿”å›"?"
 end
 
--- MIDI³£Á¿¶¨Òå
+-- MIDIå¸¸é‡å®šä¹‰
 local MIDI_EVENT = {
     NOTE_OFF = 0x8,
     NOTE_ON = 0x9,
@@ -155,7 +147,7 @@ local MIDI_EVENT = {
     END_OF_TRACK = 0x2F
 }
 
--- ¶ÁÈ¡¿É±ä³¤¶ÈÖµ (VLQ)
+-- è¯»å–å¯å˜é•¿åº¦å€¼ (VLQ)
 function read_vlq(data, index)
     local value = 0
     while true do
@@ -169,10 +161,10 @@ function read_vlq(data, index)
     return value, index
 end
 
--- midi×ªcsv
+-- midiè½¬csv
 function midi2table(FileName)
     local file = io.open(FileName, "rb")
-    if not file then return nil, "ÎŞ·¨´ò¿ªÎÄ¼ş" end
+    if not file then return nil, "æ— æ³•æ‰“å¼€æ–‡ä»¶" end
 
     local data = file:read("*a")
     file:close()
@@ -180,17 +172,17 @@ function midi2table(FileName)
     local index = 1
     local events = {}
     local track_count = 0
-    local tempo = 500000  -- Ä¬ÈÏËÙ¶È: 500000Î¢Ãë/ËÄ·ÖÒô·û (120 BPM)
+    local tempo = 500000  -- é»˜è®¤é€Ÿåº¦: 500000å¾®ç§’/å››åˆ†éŸ³ç¬¦ (120 BPM)
     local tempo_events = {}
 
-    -- ½âÎöÎÄ¼şÍ·
+    -- è§£ææ–‡ä»¶å¤´
     local header = data:sub(index, index + 3)
     index = index + 4
     if header ~= "MThd" then
-        return nil, "ÎŞĞ§MIDIÎÄ¼şÍ·"
+        return nil, "æ— æ•ˆMIDIæ–‡ä»¶å¤´"
     end
 
-    index = index + 4  -- Ìø¹ıÍ·³¤¶È(6)
+    index = index + 4  -- è·³è¿‡å¤´é•¿åº¦(6)
     local format = data:byte(index) * 256 + data:byte(index + 1)
     index = index + 2
 
@@ -200,12 +192,12 @@ function midi2table(FileName)
     local ticks_per_quarter = data:byte(index) * 256 + data:byte(index + 1)
     index = index + 2
 
-    -- ½âÎöËùÓĞ¹ìµÀ
+    -- è§£ææ‰€æœ‰è½¨é“
     for track = 1, track_count do
         local track_header = data:sub(index, index + 3)
         index = index + 4
         if track_header ~= "MTrk" then
-            return nil, "ÎŞĞ§¹ìµÀÍ·"
+            return nil, "æ— æ•ˆè½¨é“å¤´"
         end
 
         local track_length = data:byte(index) * 16777216 +
@@ -218,7 +210,7 @@ function midi2table(FileName)
         local time = 0
         local last_status = 0
 
-        -- ½âÎö¹ìµÀÄÚÊÂ¼ş
+        -- è§£æè½¨é“å†…äº‹ä»¶
         while index < track_end do
             local delta, new_index = read_vlq(data, index)
             index = new_index
@@ -227,26 +219,26 @@ function midi2table(FileName)
             local status = data:byte(index)
             index = index + 1
 
-            -- ´¦ÀíÔËĞĞ×´Ì¬
+            -- å¤„ç†è¿è¡ŒçŠ¶æ€
             if status < 0x80 then
                 status = last_status
-                index = index - 1  -- »ØÍËÎ»ÖÃ
+                index = index - 1  -- å›é€€ä½ç½®
             else
                 last_status = status
             end
 
-            -- Ìæ´úÎ»ÔËËã»ñÈ¡ÊÂ¼şÀàĞÍºÍÍ¨µÀ
+            -- æ›¿ä»£ä½è¿ç®—è·å–äº‹ä»¶ç±»å‹å’Œé€šé“
             local event_type = math.floor(status / 16)
             local channel = status % 16
 
-            -- Òô·ûÊÂ¼ş´¦Àí
+            -- éŸ³ç¬¦äº‹ä»¶å¤„ç†
             if event_type == MIDI_EVENT.NOTE_ON or event_type == MIDI_EVENT.NOTE_OFF then
                 local note = data:byte(index)
                 index = index + 1
                 local velocity = data:byte(index)
                 index = index + 1
 
-                -- NOTE_ONÇÒÁ¦¶ÈÎª0ÊÓÎªËÉ¿ªÊÂ¼ş
+                -- NOTE_ONä¸”åŠ›åº¦ä¸º0è§†ä¸ºæ¾å¼€äº‹ä»¶
                 local event_name = (event_type == MIDI_EVENT.NOTE_ON and velocity > 0)
                                   and "DOWN" or "UP"
 
@@ -257,7 +249,7 @@ function midi2table(FileName)
                     track = track
                 })
 
-            -- ÔªÊÂ¼ş´¦Àí
+            -- å…ƒäº‹ä»¶å¤„ç†
             elseif status == MIDI_EVENT.META then
                 local meta_type = data:byte(index)
                 index = index + 1
@@ -265,31 +257,31 @@ function midi2table(FileName)
                 index = new_index
 
                 if meta_type == MIDI_EVENT.SET_TEMPO then
-                    -- ½âÎöËÙ¶ÈÊÂ¼ş
+                    -- è§£æé€Ÿåº¦äº‹ä»¶
                     tempo = data:byte(index) * 65536 +
                             data:byte(index + 1) * 256 +
                             data:byte(index + 2)
                     index = index + 3
 
-                    -- ¼ÇÂ¼ËÙ¶È±ä»¯ÊÂ¼ş
+                    -- è®°å½•é€Ÿåº¦å˜åŒ–äº‹ä»¶
                     table.insert(tempo_events, {
                         time = time,
                         tempo = tempo
                     })
 
                 elseif meta_type == MIDI_EVENT.END_OF_TRACK then
-                    index = index + length  -- Ìø¹ı½áÊøÊÂ¼ş
+                    index = index + length  -- è·³è¿‡ç»“æŸäº‹ä»¶
                     break
                 else
-                    index = index + length  -- Ìø¹ıÆäËûÔªÊÂ¼ş
+                    index = index + length  -- è·³è¿‡å…¶ä»–å…ƒäº‹ä»¶
                 end
             else
-                -- Ìø¹ıÆäËûÊÂ¼ş
-                if event_type == 0xF then  -- ÏµÍ³¶ÀÕ¼
+                -- è·³è¿‡å…¶ä»–äº‹ä»¶
+                if event_type == 0xF then  -- ç³»ç»Ÿç‹¬å 
                     local length, new_index = read_vlq(data, index)
                     index = new_index + length
                 else
-                    -- ±ê×¼MIDIÊÂ¼ş³¤¶È
+                    -- æ ‡å‡†MIDIäº‹ä»¶é•¿åº¦
                     local event_lengths = {2, 2, 2, 1, 1, 1}  -- 0xA-0xE
                     index = index + (event_lengths[event_type - 0xA] or 0)
                 end
@@ -297,29 +289,29 @@ function midi2table(FileName)
         end
     end
 
-    -- °´Ê±¼äÅÅĞòËùÓĞÒô·ûÊÂ¼ş
+    -- æŒ‰æ—¶é—´æ’åºæ‰€æœ‰éŸ³ç¬¦äº‹ä»¶
     table.sort(events, function(a, b)
         return a.time < b.time
     end)
 
-    -- °´Ê±¼äÅÅĞòËÙ¶È±ä»¯ÊÂ¼ş
+    -- æŒ‰æ—¶é—´æ’åºé€Ÿåº¦å˜åŒ–äº‹ä»¶
     table.sort(tempo_events, function(a, b)
         return a.time < b.time
     end)
 
-    -- ×ª»»Ê±¼äµ½ºÁÃë
+    -- è½¬æ¢æ—¶é—´åˆ°æ¯«ç§’
     local function ticks_to_ms(ticks, current_tempo)
-        -- ¼ÆËãºÁÃëÊ±¼ä = (ticks / ticks_per_quarter) * (tempo / 1000)
+        -- è®¡ç®—æ¯«ç§’æ—¶é—´ = (ticks / ticks_per_quarter) * (tempo / 1000)
         return (ticks / ticks_per_quarter) * (current_tempo / 1000)
     end
 
-    local current_tempo = 500000  -- Ä¬ÈÏËÙ¶È
+    local current_tempo = 500000  -- é»˜è®¤é€Ÿåº¦
     local last_tempo_event_time = 0
     local last_tempo_event_index = 1
 
-    -- ×ª»»Ã¿¸öÊÂ¼şµÄÊ±¼äµ½ºÁÃë
+    -- è½¬æ¢æ¯ä¸ªäº‹ä»¶çš„æ—¶é—´åˆ°æ¯«ç§’
     for i, event in ipairs(events) do
-        -- ¼ì²éÊÇ·ñÓĞËÙ¶È±ä»¯ÊÂ¼şÔÚµ±Ç°ÊÂ¼şÖ®Ç°
+        -- æ£€æŸ¥æ˜¯å¦æœ‰é€Ÿåº¦å˜åŒ–äº‹ä»¶åœ¨å½“å‰äº‹ä»¶ä¹‹å‰
         while last_tempo_event_index <= #tempo_events and
               tempo_events[last_tempo_event_index].time <= event.time do
             local tempo_event = tempo_events[last_tempo_event_index]
@@ -328,10 +320,10 @@ function midi2table(FileName)
             last_tempo_event_index = last_tempo_event_index + 1
         end
 
-        -- ¼ÆËãÊ±¼ä²î£¨´ÓÉÏÒ»¸öËÙ¶È±ä»¯ÊÂ¼şµ½µ±Ç°ÊÂ¼ş£©
+        -- è®¡ç®—æ—¶é—´å·®ï¼ˆä»ä¸Šä¸€ä¸ªé€Ÿåº¦å˜åŒ–äº‹ä»¶åˆ°å½“å‰äº‹ä»¶ï¼‰
         local delta_ticks = event.time - last_tempo_event_time
 
-        -- ¼ÆËãºÁÃëÊ±¼ä
+        -- è®¡ç®—æ¯«ç§’æ—¶é—´
         local time_in_ms = ticks_to_ms(last_tempo_event_time, current_tempo) +
                           ticks_to_ms(delta_ticks, current_tempo)
 
@@ -346,11 +338,11 @@ function midi2csv_LUA (OpenFileName,SaveFileName)
 
 	local events, ticks_per_quarter = midi2table(OpenFileName)
 	if not events then
-		print("½âÎö´íÎó:", ticks_per_quarter)
+		print("è§£æé”™è¯¯:", ticks_per_quarter)
 		os.exit(1)
 	end
 
-	-- Éú³ÉCSVÎÄ¼ş
+	-- ç”ŸæˆCSVæ–‡ä»¶
 	local csv = io.open(SaveFileName, "w")
 	csv:write("label,time,szState1,szKey1," .. '\"return {nVersion=1,szFileName=\"\"' .. 'text' .. '\"\",\",' ..'SetSimMode 2\n')
 	local nTime = 0
@@ -371,20 +363,20 @@ function midi2csv_LUA (OpenFileName,SaveFileName)
 	end
 
 	csv:close()
-	print(string.format("½âÎö³É¹¦! ¹²´¦Àí%d¸öÒô·ûÊÂ¼ş", #events))
-	print(string.format("Ê±¼äµ¥Î»: %d ticks/quarter note", ticks_per_quarter))
-	print("Êä³öÎÄ¼ş:", SaveFileName)
+	print(string.format("è§£ææˆåŠŸ! å…±å¤„ç†%dä¸ªéŸ³ç¬¦äº‹ä»¶", #events))
+	print(string.format("æ—¶é—´å•ä½: %d ticks/quarter note", ticks_per_quarter))
+	print("è¾“å‡ºæ–‡ä»¶:", SaveFileName)
 end
 
 
--- Èë¿Ú¼ì²éÆô¶¯²ÎÊı
+-- å…¥å£æ£€æŸ¥å¯åŠ¨å‚æ•°
 if #arg < 1 then
-    os.exit(1) -- Æô¶¯²ÎÊıÎª¿Õ£¬Ã»ÓĞÇúÆ×Â·¾¶£¬ÔòÍË³ö
+    os.exit(1) -- å¯åŠ¨å‚æ•°ä¸ºç©ºï¼Œæ²¡æœ‰æ›²è°±è·¯å¾„ï¼Œåˆ™é€€å‡º
 elseif #arg == 1 then
-	arg[2] = arg[1] .. '.csv' -- Æô¶¯²ÎÊıÖ»ÓĞÒ»¸ö£¬Ìî³äµÚ¶ş²ÎÊı±£´æÂ·¾¶
+	arg[2] = arg[1] .. '.csv' -- å¯åŠ¨å‚æ•°åªæœ‰ä¸€ä¸ªï¼Œå¡«å……ç¬¬äºŒå‚æ•°ä¿å­˜è·¯å¾„
 end
 
--- µ÷ÓÃÇúÆ××ª»»º¯Êı
+-- è°ƒç”¨æ›²è°±è½¬æ¢å‡½æ•°
 midi2csv_LUA(arg[1], arg[2])
 
-os.exit(1) -- ½áÊøÍË³ö
+os.exit(1) -- ç»“æŸé€€å‡º
