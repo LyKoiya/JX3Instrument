@@ -60,7 +60,7 @@ function instrument2csv_LUA(OpenFileName, SaveFileName)
     local retStr = table.concat(aAllData) -- 合并为字符串
     file = io.open(SaveFileName, 'wb') -- 打开保存路径
     if file then
-        file:write('\239\187\191' .. retStr) -- 写入数据
+        file:write('\239\187\191', retStr) -- 写入数据
         file:close() -- 关闭文件
     end
  
