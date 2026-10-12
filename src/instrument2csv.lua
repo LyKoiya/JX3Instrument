@@ -31,7 +31,6 @@ function instrument2csv_LUA(OpenFileName, SaveFileName)
             .. tData.nVersion .. ','
             .. 'szFileName=\"\"' .. tData.szFileName
             .. '\"\",\",SetSimMode 2 //szFileName:' .. tData.szFileName
-            .. '\n'
     ) -- 表头
     -- 遍历原表，排序
     local keys = {}
@@ -43,21 +42,19 @@ function instrument2csv_LUA(OpenFileName, SaveFileName)
     table.sort(keys) -- 排序
     -- 遍历曲谱，写入文件
     for label, id in ipairs(keys) do
-        table.insert(aAllData, label .. ',')
-        table.insert(aAllData, id .. ',')
-        table.insert(aAllData, tData[id].szState1 .. ',')
-        table.insert(aAllData, tData[id].szKey1 .. ',')
-        table.insert(aAllData, tData[id].szKey1 .. ',')
-        table.insert(
-            aAllData,
-            '\"[' .. id
-                .. ']={szState1=\"\"' .. tData[id].szState1
+        local fields = {
+            label,
+            id,
+            tData[id].szState1,
+            tData[id].szKey1,
+            '\"[' .. id .. ']={szState1=\"\"' .. tData[id].szState1
                 .. '\"\",szKey1=\"\"' .. tData[id].szKey1
-                .. '\"\"},\"\n'
-        )
+                .. '\"\"},\"'
+        }
+        aAllData[#aAllData+1] = table.concat(fields, ',')
     end
     table.insert(aAllData, ',,,,}')
-    local retStr = table.concat(aAllData) -- 合并为字符串
+    local retStr = table.concat(aAllData, '\n') -- 合并为字符串
     file = io.open(SaveFileName, 'wb') -- 打开保存路径
     if file then
         file:write('\239\187\191', retStr) -- 写入数据
